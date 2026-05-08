@@ -1,50 +1,152 @@
 import streamlit as st
-import pickle
-import pandas as pd 
+import pandas as pd
+import os
+import joblib
+
+
+# Load Model & Columns
+
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+model_path = os.path.join(
+    BASE_DIR,
+    "..",
+    "src",
+    "model1.pkl"
+)
+
+columns_path = os.path.join(
+    BASE_DIR,
+    "..",
+    "src",
+    "columns.pkl"
+)
+
+model = joblib.load(model_path)
+columns = joblib.load(columns_path)
+
+
+# Streamlit Page Config
+
 
 st.set_page_config(
-    page_title="Nepal House Price Predictor",
+    page_title="Nepal House Price Prediction",
     page_icon="🏠",
     layout="centered"
 )
-model = pickle.load(open("C:\\Users\\sk\\Documents\\backend\\machineai\\Projects\\house_price_Nepal\\src\\model.pkl", "rb"))
 
-st.title("Nepali House prediction system")
-st.write("enter house details below:")
+# Title
 
 
-area = st.number_input("Area (sq ft)", min_value=500)
+st.title("🏠 Nepal House Price Prediction")
 
-bedrooms = st.number_input("Bedrooms", min_value=1)
-
-bathrooms = st.number_input("Bathrooms", min_value=1)
-
-parking = st.number_input("Parking Spaces", min_value=0)
-
-location = st.selectbox(
-    "Location",
-    ["Kathmandu", "Pokhara", "Lalitpur", "Bhaktapur"]
+st.markdown(
+    "Predict house prices using Machine Learning"
 )
 
-location_data = {
-    "location_Bhaktapur": 0,
-    "location_Kathmandu": 0,
-    "location_Lalitpur": 0,
-    "location_Pokhara": 0
-}
+st.divider()
 
-location_data[f"location_{location}"] = 1
 
-input_data = pd.DataFrame([{
-    "area": area,
-    "bedrooms": bedrooms,
-    "bathrooms": bathrooms,
-    "parking": parking,
-    **location_data
-}])
+# User Inputs
+
+
+area = st.number_input(
+    "Area (sq ft)",
+    min_value=500,
+    max_value=10000,
+    value=1200,
+    step=100
+)
+
+bedrooms = st.slider(
+    "Bedrooms",
+    min_value=1,
+    max_value=10,
+    value=3
+)
+
+bathrooms = st.slider(
+    "Bathrooms",
+    min_value=1,
+    max_value=10,
+    value=2
+)
+
+parking = st.slider(
+    "Parking Spaces",
+    min_value=0,
+    max_value=5,
+    value=1
+)
+
+locations = [
+    "Kathmandu",
+    "Pokhara",
+    "Lalitpur",
+    "Bhaktapur",
+    "Biratnagar",
+    "Birgunj",
+    "Butwal",
+    "Chitwan",
+    "Damak",
+    "Dhangadhi",
+    "Dharan",
+    "Ghorahi",
+    "Hetauda",
+    "Ilam",
+    "Itahari",
+    "Janakpur",
+    "Kalaiya",
+    "Kirtipur",
+    "Lahan",
+    "Nepalgunj",
+    "Tikapur",
+    "Tulsipur",
+    "Bhairahawa",
+    "Birtamod",
+    "Banepa"
+]
+
+location = st.selectbox(
+    "Select Location",
+    sorted(locations)
+)
+
+st.divider()
+
+
+# Prediction Button
+
 
 if st.button("Predict Price"):
-    
-    prediction = model.predict(input_data)
 
-    st.success(f"Estimated House Price: NPR {int(prediction[0]):,}")
+    # Create empty dataframe
+    input_df = pd.DataFrame(
+        columns=columns
+    )
+
+    # Fill all values with 0
+    input_df.loc[0] = 0
+
+    # Add numerical values
+    input_df["area"] = area
+    input_df["bedrooms"] = bedrooms
+    input_df["bathrooms"] = bathrooms
+    input_df["parking"] = parking
+
+    # Encode selected location
+    location_column = f"location_{location}"
+
+    if location_column in input_df.columns:
+        input_df[location_column] = 1
+
+    # Prediction
+    prediction = model.predict(input_df)[0]
+
+    # Display Result
+    st.success(
+        f"Estimated House Price: NPR {prediction:,.0f}"
+    )
+
+    st.balloons()
